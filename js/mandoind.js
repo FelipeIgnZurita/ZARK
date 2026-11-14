@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { conectarASala, mensajeDeError } from './canal.js';
 
 const pantallaIngreso = document.getElementById('pantalla-ingreso');
 const pantallaEspera = document.getElementById('pantalla-espera');
@@ -25,9 +25,10 @@ btnUnirse.addEventListener('click', async () => {
     if (salaPin.length !== 4 || !miNombre) { mensajeError.innerText = "Completá los datos."; return; }
     btnUnirse.innerText = "Buscando..."; btnUnirse.disabled = true;
 
-    const { data, error } = await supabase.from('Sala').select('*').eq('pin', salaPin).single();
-    if (error || !data) {
-        mensajeError.innerText = "La sala no existe.";
+    try {
+        canalSala = await conectarASala(salaPin);
+    } catch (err) {
+        mensajeError.innerText = mensajeDeError(err);
         btnUnirse.innerText = "Entrar a la Sala"; btnUnirse.disabled = false;
         return;
     }
@@ -37,13 +38,17 @@ btnUnirse.addEventListener('click', async () => {
 });
 
 function conectarWebSocketInvitado() {
-    canalSala = supabase.channel(`sala-${salaPin}`);
+    canalSala.onDesconexion(() => {
+        alert("Se perdió la conexión con el host.");
+        location.reload();
+    });
+
     canalSala
         .on('broadcast', { event: 'rechazo_unirse' }, (mensaje) => {
             if (mensaje.payload.id_temp === miIdTemp) {
                 mensajeError.innerText = "Ese nombre ya está en uso.";
                 btnUnirse.innerText = "Entrar a la Sala"; btnUnirse.disabled = false;
-                supabase.removeChannel(canalSala);
+                canalSala.cerrar();
             }
         })
         .on('broadcast', { event: 'aceptacion_unirse' }, (mensaje) => {

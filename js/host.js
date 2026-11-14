@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { crearSalaHost } from './canal.js';
 
 const pantallaSeleccion = document.getElementById('pantalla-seleccion');
 const pantallaLobby = document.getElementById('pantalla-lobby');
@@ -46,17 +46,23 @@ function generarPIN() {
 }
 
 async function crearSala() {
-    salaPin = generarPIN();
-    pinDisplay.innerText = salaPin;
+    pinDisplay.innerText = "....";
 
-    const { error } = await supabase.from('Sala').insert([{ pin: salaPin, juego: juegoSeleccionado }]);
-    if (error) { pinDisplay.innerText = "ERROR"; return; }
+    try {
+        const sala = await crearSalaHost(generarPIN);
+        salaPin = sala.pin;
+        canalSalaGlobal = sala.canal;
+    } catch (err) {
+        console.error(err);
+        pinDisplay.innerText = "ERROR";
+        return;
+    }
+
+    pinDisplay.innerText = salaPin;
     escucharJugadores();
 }
 
 function escucharJugadores() {
-    canalSalaGlobal = supabase.channel(`sala-${salaPin}`);
-
     canalSalaGlobal
         .on('broadcast', { event: 'solicitar_unirse' }, (mensaje) => {
             const { nombre, id_temp } = mensaje.payload;
@@ -203,11 +209,12 @@ function mostrarResultadoFinal(voto) {
     canalSalaGlobal.send({ type: 'broadcast', event: 'fin_de_ronda' });
 }
 
-// Limpieza automática
-async function destruirSala() {
-    if (salaPin) {
-        await supabase.from('Sala').delete().eq('pin', salaPin);
-        salaPin = ""; 
+// Limpieza automática: liberamos el PIN en el servidor de PeerJS
+function destruirSala() {
+    if (canalSalaGlobal) {
+        canalSalaGlobal.cerrar();
+        canalSalaGlobal = null;
+        salaPin = "";
     }
 }
 window.addEventListener('beforeunload', destruirSala);

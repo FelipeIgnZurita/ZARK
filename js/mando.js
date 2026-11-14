@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { conectarASala, mensajeDeError } from './canal.js';
 
 const pantallaIngreso = document.getElementById('pantalla-ingreso');
 const pantallaEspera = document.getElementById('pantalla-espera');
@@ -35,10 +35,10 @@ async function unirseASala() {
     btnUnirse.innerText = "Conectando...";
     btnUnirse.disabled = true;
 
-    const { data, error } = await supabase.from('Sala').select('*').eq('pin', pin).single(); 
-
-    if (error || !data) {
-        mensajeError.innerText = "La sala no existe.";
+    try {
+        canalSala = await conectarASala(pin);
+    } catch (err) {
+        mensajeError.innerText = mensajeDeError(err);
         btnUnirse.innerText = "Entrar a la Sala";
         btnUnirse.disabled = false;
         return;
@@ -50,7 +50,10 @@ async function unirseASala() {
 }
 
 function conectarWebSocket(pin, nombre) {
-    canalSala = supabase.channel(`sala-${pin}`);
+    canalSala.onDesconexion(() => {
+        alert("Se perdió la conexión con la pantalla principal.");
+        location.reload();
+    });
 
     canalSala
         .on('broadcast', { event: 'rechazo_unirse' }, (mensaje) => {
@@ -59,7 +62,7 @@ function conectarWebSocket(pin, nombre) {
                 mensajeError.innerText = "Ese nombre ya está en uso. Elegí otro.";
                 btnUnirse.innerText = "Entrar a la Sala";
                 btnUnirse.disabled = false;
-                supabase.removeChannel(canalSala); // Cortamos la conexión
+                canalSala.cerrar(); // Cortamos la conexión
             }
         })
         .on('broadcast', { event: 'aceptacion_unirse' }, (mensaje) => {

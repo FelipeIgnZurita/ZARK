@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { crearSalaHost } from './canal.js';
 
 const pantallaCrear = document.getElementById('pantalla-crear');
 const pantallaLobby = document.getElementById('pantalla-lobby');
@@ -42,11 +42,19 @@ btnCrearSala.addEventListener('click', async () => {
     btnCrearSala.innerText = "Creando...";
     btnCrearSala.disabled = true;
 
-    salaPin = generarPIN();
-    jugadoresActivos.push(miNombre);
+    try {
+        const sala = await crearSalaHost(generarPIN);
+        salaPin = sala.pin;
+        canalSalaGlobal = sala.canal;
+    } catch (err) {
+        console.error(err);
+        mensajeError.innerText = "No se pudo crear la sala. Revisá tu conexión.";
+        btnCrearSala.innerText = "Crear Partida";
+        btnCrearSala.disabled = false;
+        return;
+    }
 
-    const { error } = await supabase.from('Sala').insert([{ pin: salaPin, juego: juegoSeleccionado }]);
-    if (error) { mensajeError.innerText = "Error BD"; btnCrearSala.disabled = false; return; }
+    jugadoresActivos.push(miNombre);
 
     pinDisplay.innerText = salaPin;
     pantallaCrear.classList.add('oculto');
@@ -57,8 +65,6 @@ btnCrearSala.addEventListener('click', async () => {
 });
 
 function conectarWebSocketHost() {
-    canalSalaGlobal = supabase.channel(`sala-${salaPin}`);
-
     canalSalaGlobal
         .on('broadcast', { event: 'solicitar_unirse' }, (mensaje) => {
             const { nombre, id_temp } = mensaje.payload;
@@ -116,7 +122,7 @@ btnArrancarJuego.addEventListener('click', () => {
     if (juegoSeleccionado === 'hacker') inyectarJuegoHacker(pantallaJuegoHost, canalSalaGlobal);
 });
 
-async function destruirSala() { if (salaPin) await supabase.from('Sala').delete().eq('pin', salaPin); }
+function destruirSala() { if (canalSalaGlobal) { canalSalaGlobal.cerrar(); canalSalaGlobal = null; } }
 window.addEventListener('beforeunload', destruirSala);
 window.addEventListener('pagehide', destruirSala);
 
