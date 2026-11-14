@@ -20,7 +20,23 @@ import { Peer } from 'https://cdn.jsdelivr.net/npm/peerjs@1.5.5/+esm';
 const PREFIJO_ID = 'zark-fiz-sala-';
 const idDeSala = (pin) => PREFIJO_ID + pin.toUpperCase();
 
-const TIMEOUT_CONEXION_MS = 10000;
+const TIMEOUT_CONEXION_MS = 15000;
+
+// Servidores ICE: STUN para descubrir la IP pública y TURN como relay para
+// cuando los dos dispositivos están en redes distintas (wifi vs datos móviles)
+// y no logran conectarse directo. Sin TURN, muchas conexiones celu<->notebook fallan.
+const OPCIONES_PEER = {
+    debug: 1,
+    config: {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+            { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+        ]
+    }
+};
 
 class CanalP2P {
     constructor(rol) {
@@ -98,7 +114,7 @@ export function crearSalaHost(generarPIN, intentos = 5) {
         const probar = (restantes) => {
             const pin = generarPIN();
             const canal = new CanalP2P('host');
-            const peer = new Peer(idDeSala(pin), { debug: 1 });
+            const peer = new Peer(idDeSala(pin), OPCIONES_PEER);
             canal.peer = peer;
 
             peer.on('open', () => {
@@ -137,7 +153,7 @@ export function crearSalaHost(generarPIN, intentos = 5) {
 export function conectarASala(pin) {
     return new Promise((resolve, reject) => {
         const canal = new CanalP2P('invitado');
-        const peer = new Peer({ debug: 1 });
+        const peer = new Peer(OPCIONES_PEER);
         canal.peer = peer;
         let terminado = false;
 
