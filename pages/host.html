@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZARK - Crear sala</title>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../css/style.css">
     <style>
         body, html { margin: 0; padding: 0; background-color: #0a0a0a; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height: 100%; }
@@ -33,7 +34,7 @@
         .pin-gigante { font-size: 6rem; text-align: center; letter-spacing: 15px; margin: 20px 0; color: #fff; font-weight: 900; background: linear-gradient(135deg, #775adf, #9b59b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
         /* Chips de jugadores para la pantalla grande */
-        #jugadores-conectados { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        #jugadores-conectados { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 15px; }
         .jugador-chip { background: #222; padding: 12px 25px; border-radius: 30px; border: 2px solid #775adf; font-size: 1.3rem; font-weight: bold; box-shadow: 0 4px 10px rgba(119, 90, 223, 0.2); }
         
         .oculto { display: none !important; }
@@ -43,6 +44,49 @@
         .subtitulo { font-size: 2rem; }
         .texto-ayuda { font-size: 1.2rem; color: #aaa; }
         .caja-scroll { max-height: 50vh; overflow-y: auto; padding-right: 10px; }
+
+        /* ----- Fase de escritura (Chamuyando) ----- */
+        .caja-ejemplo { max-width: 560px; margin: 0 auto 20px auto; background: #141414; padding: 18px 22px; border-radius: 14px; border: 1px solid #333; text-align: left; }
+        .tip-vandalo { font-family: 'Permanent Marker', cursive; color: #ff6b35; font-size: 1.3rem; line-height: 1.5; transform: rotate(-1.2deg); max-width: 540px; margin: 0 auto 22px auto; text-align: center; text-shadow: 1px 1px 0 rgba(0,0,0,0.4); }
+        .timer-chamuyo { font-family: 'Courier New', monospace; font-weight: 900; font-size: 3rem; letter-spacing: 3px; color: #fff; margin: 0; }
+        .timer-chamuyo.poco { color: #e74c3c; animation: pulso-timer 1s infinite; }
+        @keyframes pulso-timer { 50% { opacity: 0.4; } }
+        .puntos-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 15px; }
+        .punto { width: 14px; height: 14px; border-radius: 50%; background: #2a2a2a; border: 2px solid #444; transition: all 0.3s; }
+        .punto.listo { background: #e67e22; border-color: #e67e22; box-shadow: 0 0 10px rgba(230, 126, 34, 0.6); }
+
+        /* ----- Recorte de diccionario (resultado) ----- */
+        .recorte-diccionario {
+            max-width: 520px; margin: 0 auto; text-align: justify; display: inline-block;
+            background-color: #efe6cc;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)' opacity='0.07'/%3E%3C/svg%3E");
+            color: #2a2520; font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 1.3rem; line-height: 1.5; padding: 22px 26px; border-radius: 4px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.5); transform: rotate(-0.8deg);
+        }
+        .recorte-diccionario .headword { font-weight: 700; letter-spacing: 0.5px; color: #1a1712; }
+        .recorte-diccionario .pos { font-style: italic; color: #6b5e45; }
+
+        /* ----- Página de diccionario (opciones que lee el comelibros) ----- */
+        .pagina-diccionario {
+            max-width: 640px; margin: 0 auto; text-align: left;
+            background-color: #efe6cc;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)' opacity='0.07'/%3E%3C/svg%3E");
+            color: #2a2520; font-family: 'Georgia', 'Times New Roman', serif;
+            padding: 18px 28px; border-radius: 4px; box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+            max-height: 60vh; overflow-y: auto;
+        }
+        .entrada-dic { font-size: 1.3rem; line-height: 1.5; text-align: justify; padding: 12px 0; border-bottom: 1px solid rgba(60,40,20,0.15); }
+        .entrada-dic:last-child { border-bottom: none; }
+        .entrada-dic .letra { font-weight: 700; color: #1a1712; margin-right: 8px; font-size: 1.35rem; }
+
+        /* ----- Pictionary (lienzo + "No es") ----- */
+        .zona-lienzo { display: flex; gap: 20px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+        #lienzo-host { width: 100%; max-width: 640px; aspect-ratio: 4 / 3; background: #fff; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .caja-noes { width: 240px; max-width: 100%; background: #111; border: 1px solid #333; border-radius: 14px; padding: 14px; text-align: left; max-height: 480px; overflow-y: auto; }
+        .noes-titulo { color: #e74c3c; font-size: 1.1rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .noes-lista { display: flex; flex-wrap: wrap; gap: 8px; }
+        .noes-chip { background: #2a1818; color: #e0a0a0; border: 1px solid #5a2d2d; border-radius: 8px; padding: 5px 10px; font-size: 1rem; text-decoration: line-through; }
     </style>
 </head>
 <body>
@@ -58,10 +102,13 @@
             <h2 style="margin-top: 0; margin-bottom: 25px; font-size: 1.5rem; color: #fff;">Elegí el Party Game</h2>
             
             <div class="grilla-juegos">
-                <!-- Solo dejamos El Diccionario por ahora -->
                 <button class="btn-juego" data-juego="diccionario">
                     <span class="material-symbols-outlined icono">menu_book</span>
-                    <span class="texto">El Diccionario</span>
+                    <span class="texto">El diccionario</span>
+                </button>
+                <button class="btn-juego" data-juego="pictionary">
+                    <span class="material-symbols-outlined icono">brush</span>
+                    <span class="texto">Pictionary</span>
                 </button>
             </div>
             

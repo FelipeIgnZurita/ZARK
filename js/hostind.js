@@ -1,4 +1,5 @@
 import { crearSalaHost } from './canal.js';
+import { iniciarBatalla } from './battleship.js';
 
 const pantallaCrear = document.getElementById('pantalla-crear');
 const pantallaLobby = document.getElementById('pantalla-lobby');
@@ -97,30 +98,72 @@ function actualizarListaVisual() {
     listaJugadores.innerHTML = '';
     jugadoresActivos.forEach((j, idx) => {
         const div = document.createElement('div'); div.classList.add('jugador-item');
-        div.innerText = idx === 0 ? `[ADMIN] ${j}` : `> ${j}`;
+        div.style.display = 'flex';
+        div.style.justifyContent = 'space-between';
+        div.style.alignItems = 'center';
+
+        const nombre = document.createElement('span');
+        nombre.innerText = idx === 0 ? `[ADMIN] ${j}` : `> ${j}`;
+        div.appendChild(nombre);
+
+        if (idx !== 0) {
+            const btn = document.createElement('button');
+            btn.innerText = '✕';
+            btn.title = 'Echar de la sala';
+            btn.style.cssText = 'background:#e74c3c;color:#fff;border:none;border-radius:6px;width:30px;height:30px;font-weight:bold;cursor:pointer;flex-shrink:0;';
+            btn.addEventListener('click', () => echarJugador(j));
+            div.appendChild(btn);
+        }
         listaJugadores.appendChild(div);
     });
 }
 
+function echarJugador(nombre) {
+    jugadoresActivos = jugadoresActivos.filter(j => j !== nombre);
+    actualizarListaVisual();
+    canalSalaGlobal.send({ type: 'broadcast', event: 'actualizar_lista', payload: { lista: jugadoresActivos } });
+    canalSalaGlobal.send({ type: 'broadcast', event: 'jugador_expulsado', payload: { nombre } });
+}
+
 btnArrancarJuego.addEventListener('click', () => {
+    if (juegoSeleccionado === 'battleship') {
+        if (jugadoresActivos.length !== 2) {
+            alert("La Batalla Naval es 1v1: tienen que ser exactamente 2 jugadores.");
+            return;
+        }
+        canalSalaGlobal.send({ type: 'broadcast', event: 'orden_iniciar_juego', payload: { juego: 'battleship' } });
+        pantallaLobby.classList.add('oculto');
+        pantallaJuegoHost.classList.remove('oculto');
+        iniciarBatalla({ canal: canalSalaGlobal, miNombre, rivalNombre: jugadoresActivos[1], soyAnfitrion: true, contenedor: pantallaJuegoHost });
+        return;
+    }
+
     if (jugadoresActivos.length < 2) {
         alert("Se necesitan al menos 2 jugadores.");
         return;
     }
-    
+
+    window.ZarkHacker.nivel = 1;
+    arrancarHacker();
+});
+
+// Arranca (o reinicia) una partida de Hackers en el nivel actual
+function arrancarHacker() {
     window.ZarkHacker.todosLosModulos = [];
     window.ZarkHacker.instruccionesActivas = {};
+    window.ZarkHacker.estadoModulos = {};
+    window.ZarkHacker.ultimaInstruccion = {};
     window.ZarkHacker.saludGlobal = 100;
     window.ZarkHacker.fondosGlobal = 0;
     window.ZarkHacker.nodosListos = 0;
     window.ZarkHacker.rondaIniciada = false;
+    clearInterval(window.ZarkHacker.bucleJuego);
 
-    canalSalaGlobal.send({ type: 'broadcast', event: 'orden_iniciar_juego', payload: { juego: juegoSeleccionado } });
+    canalSalaGlobal.send({ type: 'broadcast', event: 'orden_iniciar_juego', payload: { juego: 'hacker', nivel: window.ZarkHacker.nivel } });
     pantallaLobby.classList.add('oculto');
     pantallaJuegoHost.classList.remove('oculto');
-    
-    if (juegoSeleccionado === 'hacker') inyectarJuegoHacker(pantallaJuegoHost, canalSalaGlobal);
-});
+    inyectarJuegoHacker(pantallaJuegoHost, canalSalaGlobal);
+}
 
 function destruirSala() { if (canalSalaGlobal) { canalSalaGlobal.cerrar(); canalSalaGlobal = null; } }
 window.addEventListener('beforeunload', destruirSala);
@@ -136,11 +179,15 @@ function generarNombreModulo() {
     return `${PREFIJOS[Math.floor(Math.random() * PREFIJOS.length)]} ${SUSTANTIVOS[Math.floor(Math.random() * SUSTANTIVOS.length)]}`;
 }
 
-window.ZarkHacker = { 
-    canal: null, soyHost: true, misModulos: [], todosLosModulos: [], 
-    instruccionesActivas: {}, bucleJuego: null, jugando: false, 
-    saludGlobal: 100, fondosGlobal: 0, nodosListos: 0, rondaIniciada: false, huellaTimers: {} 
+window.ZarkHacker = {
+    canal: null, soyHost: true, misModulos: [], todosLosModulos: [],
+    instruccionesActivas: {}, bucleJuego: null, jugando: false,
+    saludGlobal: 100, fondosGlobal: 0, nodosListos: 0, rondaIniciada: false, huellaTimers: {},
+    estadoModulos: {}, ultimaInstruccion: {}, nivel: 1
 };
+
+// Estado "por defecto" de cada tipo de control (para no pedir lo que ya está puesto)
+const HK_DEFAULTS = { palanca: false, slider: 0, dial: 1, teclado: null, flechas: null };
 
 export function inyectarJuegoHacker(contenedorDOM, canal) {
     window.ZarkHacker.canal = canal;
@@ -235,7 +282,8 @@ window.ZarkHacker.iniciarRondaHost = function() {
         jugadoresActivos.forEach(jugador => {
             let inst = window.ZarkHacker.instruccionesActivas[jugador];
             if (inst) {
-                inst.tiempo -= 1.5;
+                // A mayor nivel, el tiempo corre más rápido (menos reacción)
+                inst.tiempo -= (1.5 + (window.ZarkHacker.nivel - 1) * 0.6);
                 actualizacionTimers[jugador] = inst.tiempo;
 
                 // Penalización por dejar acabar el tiempo
@@ -260,19 +308,35 @@ window.ZarkHacker.iniciarRondaHost = function() {
 
 window.ZarkHacker.asignarNuevaInstruccion = function(jugador) {
     const modulos = window.ZarkHacker.todosLosModulos;
-    const mod = modulos[Math.floor(Math.random() * modulos.length)]; 
-    let texto = ""; let valorEsperado = null;
-    
-    switch(mod.tipo) {
-        case 'boton': texto = `> APRETAR BOTON DE ${mod.nombre}`; valorEsperado = 'click'; break;
-        case 'palanca': const on = Math.random() > 0.5; texto = `> ${mod.nombre} ${on ? 'ON' : 'OFF'}`; valorEsperado = on; break;
-        case 'teclado': const num = [1, 2, 3][Math.floor(Math.random()*3)]; texto = `> INGRESAR [${num}] EN ${mod.nombre}`; valorEsperado = num; break;
-        case 'slider': const val = [0, 25, 50, 75, 100][Math.floor(Math.random()*5)]; texto = `> SETTEAR ${mod.nombre} EN ${val}%`; valorEsperado = val; break;
-        case 'flechas': const dir = ['ARRIBA', 'ABAJO', 'IZQ', 'DER'][Math.floor(Math.random()*4)]; texto = `> MOVER ${mod.nombre} A LA ${dir}`; valorEsperado = dir; break;
-        case 'dial': const dVal = [1, 2, 3, 4, 5][Math.floor(Math.random()*5)]; texto = `> ROTAR ${mod.nombre} A ${dVal}`; valorEsperado = dVal; break;
-        case 'huella': texto = `> IDENTIFICAR ${mod.nombre}`; valorEsperado = 'ok'; break;
-    }
-    
+    const estados = window.ZarkHacker.estadoModulos;
+    const previa = window.ZarkHacker.ultimaInstruccion[jugador];
+
+    const elegirDistinto = (opciones, actual) => {
+        const libres = opciones.filter(x => x != actual);
+        return libres[Math.floor(Math.random() * libres.length)];
+    };
+
+    let mod, texto, valorEsperado, intentos = 0;
+    do {
+        mod = modulos[Math.floor(Math.random() * modulos.length)];
+        const actual = (mod.nombre in estados) ? estados[mod.nombre] : HK_DEFAULTS[mod.tipo];
+        switch (mod.tipo) {
+            case 'boton': texto = `> APRETAR BOTÓN DE ${mod.nombre}`; valorEsperado = 'click'; break;
+            case 'huella': texto = `> IDENTIFICAR ${mod.nombre}`; valorEsperado = 'ok'; break;
+            case 'palanca': { // siempre lo contrario al estado actual, así nunca pide algo ya puesto
+                const on = !(actual === true);
+                texto = `> ${mod.nombre} ${on ? 'ON' : 'OFF'}`; valorEsperado = on; break;
+            }
+            case 'teclado': { const n = elegirDistinto([1, 2, 3], Number(actual)); texto = `> INGRESAR [${n}] EN ${mod.nombre}`; valorEsperado = n; break; }
+            case 'slider': { const v = elegirDistinto([0, 25, 50, 75, 100], Number(actual)); texto = `> SETEAR ${mod.nombre} EN ${v}%`; valorEsperado = v; break; }
+            case 'dial': { const d = elegirDistinto([1, 2, 3, 4, 5], Number(actual)); texto = `> ROTAR ${mod.nombre} A ${d}`; valorEsperado = d; break; }
+            case 'flechas': { const dir = elegirDistinto(['ARRIBA', 'ABAJO', 'IZQ', 'DER'], actual); texto = `> MOVER ${mod.nombre} A LA ${dir}`; valorEsperado = dir; break; }
+        }
+        intentos++;
+        // No repetir la instrucción anterior (mismo módulo y mismo valor)
+    } while (intentos < 15 && previa && previa.nombre === mod.nombre && previa.valor === valorEsperado);
+
+    window.ZarkHacker.ultimaInstruccion[jugador] = { nombre: mod.nombre, valor: valorEsperado };
     window.ZarkHacker.instruccionesActivas[jugador] = { nombreModulo: mod.nombre, tipo: mod.tipo, valorEsperado: valorEsperado, tiempo: 100 };
 
     if (jugador === miNombre) {
@@ -285,6 +349,8 @@ window.ZarkHacker.asignarNuevaInstruccion = function(jugador) {
 // CEREBRO: Evalúa las acciones para no penalizar a lo loco
 window.ZarkHacker.procesarAccionCentral = function(payload) {
     if (!window.ZarkHacker.jugando) return;
+    // Recordamos el estado real de cada control (para no pedir lo que ya está puesto)
+    window.ZarkHacker.estadoModulos[payload.nombre] = payload.valor;
     let acierto = false;
     let jugadorResuelto = null;
     let esModuloActivo = false;
@@ -324,7 +390,7 @@ function actualizarYEnviarEstado() {
 window.ZarkHacker.terminarJuegoGlobal = function(victoria) {
     window.ZarkHacker.jugando = false;
     clearInterval(window.ZarkHacker.bucleJuego);
-    window.ZarkHacker.canal.send({ type: 'broadcast', event: 'hacker_fin', payload: { victoria: victoria } });
+    window.ZarkHacker.canal.send({ type: 'broadcast', event: 'hacker_fin', payload: { victoria: victoria, nivel: window.ZarkHacker.nivel } });
     window.terminarJuegoVisual(victoria);
 }
 
@@ -353,10 +419,29 @@ window.actualizarBarrasVisuales = function(salud, fondos) {
 }
 
 window.terminarJuegoVisual = function(victoria) {
-    const el = document.getElementById('texto-instruccion');
-    if (el) {
-        el.innerText = victoria ? "> DESCARGA COMPLETADA." : "> SISTEMA COMPROMETIDO.";
-        el.style.color = victoria ? "#00ff33" : "#ff3333";
+    const nivel = window.ZarkHacker.nivel;
+    if (victoria) {
+        pantallaJuegoHost.innerHTML = `
+            <div class="hk-fin">
+                <h1 style="color:#00ff33;">🔓 ACCESO CONCEDIDO</h1>
+                <p>Nivel ${nivel} completado. El próximo corre más rápido...</p>
+                <button class="hk-btn" id="hk-siguiente">Siguiente nivel ▶</button>
+            </div>`;
+        document.getElementById('hk-siguiente').addEventListener('click', () => {
+            window.ZarkHacker.nivel++;
+            arrancarHacker();
+        });
+    } else {
+        pantallaJuegoHost.innerHTML = `
+            <div class="hk-fin">
+                <h1 style="color:#ff3333;">🚨 ¡TE ATRAPARON!</h1>
+                <p>El sistema te detectó y cortó la conexión.</p>
+                <button class="hk-btn roja" id="hk-retry">Intentar de nuevo ↻</button>
+            </div>`;
+        document.getElementById('hk-retry').addEventListener('click', () => {
+            window.ZarkHacker.nivel = 1;
+            arrancarHacker();
+        });
     }
 }
 

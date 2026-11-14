@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZARK - Mando</title>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Permanent+Marker&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../css/style.css">
     <style>
         .mando-contenedor { display: flex; flex-direction: column; justify-content: center; min-height: 85vh; }
@@ -16,6 +17,46 @@
         #btn-unirse:active { transform: scale(0.95); }
         .pantalla-espera-activa { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         .oculto { display: none !important; }
+
+        /* ----- Textura símil papel (comelibros y mentiroso) ----- */
+        .textura-papel {
+            background-color: #f4ecd8;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.06'/%3E%3C/svg%3E");
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5), inset 0 0 70px rgba(150,120,70,0.18);
+        }
+
+        /* ----- Timer en el celular ----- */
+        .dic-timer { font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.8rem; color: #8a6d3b; margin: -5px 0 0 0; }
+        .dic-timer.poco { color: #c0392b; }
+
+        /* ----- Identidad del MENTIROSO (vándalo) ----- */
+        #control-diccionario.modo-vandalo #dic-instruccion {
+            font-family: 'Permanent Marker', cursive; font-style: normal; color: #c0392b;
+            font-size: 1.25rem; transform: rotate(-1.5deg); line-height: 1.4;
+        }
+        #control-diccionario.modo-vandalo #input-definicion {
+            font-family: 'Caveat', cursive; font-size: 1.6rem; letter-spacing: 1px;
+            background-color: #fffdf5; color: #1a1a1a; border: 2px dashed #c0392b;
+        }
+        #control-diccionario.modo-vandalo #btn-mandar-chamuyo {
+            font-family: 'Permanent Marker', cursive; letter-spacing: 1px; transform: rotate(-1deg);
+        }
+
+        /* ----- Pictionary: dibujar ----- */
+        .palabra-dibujar { font-size: 0.85rem; color: #aaa; text-transform: uppercase; letter-spacing: 2px; margin: 0; text-align: center; }
+        .palabra-dibujar strong { display: block; font-size: 2rem; color: #fff; text-transform: none; letter-spacing: 1px; margin-top: 4px; font-family: 'Georgia', serif; }
+        #lienzo-dibujo { width: 100%; aspect-ratio: 4 / 3; background: #fff; border-radius: 12px; touch-action: none; cursor: crosshair; box-shadow: inset 0 0 0 2px #ddd; }
+        .barra-herramientas { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; width: 100%; }
+        .color-btn { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #fff; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.4); }
+        .color-btn.activo { outline: 3px solid #775adf; outline-offset: 2px; }
+        .herr-btn { background: #2a2a2a; color: #fff; border: 2px solid #555; border-radius: 10px; padding: 8px 14px; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .herr-btn:active { transform: scale(0.95); }
+        .btn-rendirse { width: 100%; background: #e74c3c; color: #fff; border: none; border-radius: 12px; padding: 12px; font-weight: bold; font-size: 1.05rem; cursor: pointer; }
+
+        /* ----- Pictionary: adivinar ----- */
+        .mirar-pantalla { text-align: center; }
+        .mirar-pantalla .material-symbols-outlined { font-size: 3rem; color: #775adf; }
+        #feedback-adivinar { min-height: 24px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -39,16 +80,17 @@
         <!-- FASE 2: ESPERANDO Y CONTROLES DEL DIRECTOR -->
         <div id="pantalla-espera" class="pantalla-espera-activa oculto">
             <span class="material-symbols-outlined" style="font-size: 4rem; color: #775adf;">videogame_asset</span>
-            <h2 class="subtitulo mt-10">¡Estás adentro!</h2>
-            <p id="texto-espera" class="texto-ayuda mt-10">Mirá la pantalla principal...</p>
+            <h2 id="titulo-espera" class="subtitulo mt-10">Esperando al host...</h2>
+            <p id="texto-espera" class="texto-ayuda mt-10">Ya estás en la sala, mirá la pantalla principal.</p>
             
-            <!-- Botón exclusivo para el VIP -->
+            <!-- Botón exclusivo para el host (el primero que entra) -->
             <button id="btn-director-arrancar" class="btn-accion mt-20 oculto" style="background-color: #3498db; width: 100%; border: none; padding: 15px; border-radius: 12px; font-size: 1.2rem; font-weight: bold; color: #fff;">¡Arrancar Partida!</button>
         </div>
 
         <!-- FASE 3: ESCRITURA DICCIONARIO -->
-        <div id="control-diccionario" class="caja-juego oculto" style="background-color: #f4ecd8; border: 2px solid #c8b79b; border-left: 12px solid #e67e22;">
+        <div id="control-diccionario" class="caja-juego textura-papel oculto" style="background-color: #f4ecd8; border: 2px solid #c8b79b; border-left: 12px solid #e67e22;">
             <h3 id="dic-palabra" class="text-center" style="font-family: 'Georgia', serif; font-size: 2.5rem; color: #2c3e50; text-transform: lowercase; letter-spacing: 1px; border-bottom: 2px solid #c8b79b; padding-bottom: 10px; margin-top: 0; width: 100%;"></h3>
+            <div id="dic-timer" class="dic-timer"></div>
             <p id="dic-instruccion" class="text-center mb-10 mt-10" style="font-size: 1.1rem; color: #555; font-style: italic;"></p>
             
             <div id="dic-input-container" style="width: 100%;">
@@ -58,10 +100,34 @@
         </div>
 
         <!-- FASE 4: VOTACIÓN -->
-        <div id="control-votacion" class="caja-juego oculto" style="background-color: #f4ecd8; border: 2px solid #c8b79b;">
-            <h3 class="text-center mb-10" style="color: #2c3e50; font-family: 'Georgia', serif;">¿Cuál es la posta?</h3>
+        <div id="control-votacion" class="caja-juego textura-papel oculto" style="background-color: #f4ecd8; border: 2px solid #c8b79b;">
+            <h3 class="text-center mb-10" style="color: #2c3e50; font-family: 'Georgia', serif;">Elegí cuál te parece que fue la verdadera</h3>
             <div id="contenedor-botones-voto" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
             <p id="mensaje-espera-voto" class="text-center mt-10 oculto" style="color: #555; font-style: italic;"></p>
+        </div>
+
+        <!-- PICTIONARY: DIBUJAR -->
+        <div id="control-dibujo" class="caja-juego oculto">
+            <p class="palabra-dibujar">Dibujá esto <strong id="palabra-objetivo"></strong></p>
+            <canvas id="lienzo-dibujo" width="600" height="450"></canvas>
+            <div class="barra-herramientas" id="paleta"></div>
+            <div class="barra-herramientas">
+                <button class="herr-btn" id="btn-goma"><span class="material-symbols-outlined">ink_eraser</span>Goma</button>
+                <button class="herr-btn" id="btn-limpiar"><span class="material-symbols-outlined">delete</span>Borrar todo</button>
+            </div>
+            <button class="btn-rendirse" id="btn-rendirse">Me rindo / Revelar</button>
+        </div>
+
+        <!-- PICTIONARY: ADIVINAR -->
+        <div id="control-adivinar" class="caja-juego oculto">
+            <div class="mirar-pantalla">
+                <span class="material-symbols-outlined">visibility</span>
+                <h3 style="margin: 5px 0;"><span id="quien-dibuja"></span> está dibujando</h3>
+                <p class="texto-ayuda" style="margin: 0;">Mirá la pantalla y escribí qué es.</p>
+            </div>
+            <input type="text" id="input-adivinar" class="input-estilo input-mando" placeholder="¿Qué es?" style="text-transform: none; letter-spacing: normal; color: #fff; background-color: #2a2a2a;" autocomplete="off">
+            <button id="btn-adivinar" class="btn-accion mt-10" style="width: 100%; padding: 15px; border-radius: 12px; background-color: #775adf; color: #fff; border: none; font-weight: bold; font-size: 1.2rem;">Adivinar</button>
+            <p id="feedback-adivinar" class="text-center" style="margin: 0;"></p>
         </div>
     </main>
     <script type="module" src="../js/mando.js"></script>

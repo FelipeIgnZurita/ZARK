@@ -1,4 +1,5 @@
 import { conectarASala, mensajeDeError } from './canal.js';
+import { iniciarBatalla } from './battleship.js';
 
 const pantallaIngreso = document.getElementById('pantalla-ingreso');
 const pantallaEspera = document.getElementById('pantalla-espera');
@@ -14,6 +15,7 @@ let miNombre = "";
 let salaPin = "";
 let canalSala = null;
 let miIdTemp = "";
+let listaActual = [];
 
 inputPin.addEventListener('input', function() { this.value = this.value.toUpperCase(); });
 inputNombre.addEventListener('input', function() { this.value = this.value.toUpperCase(); });
@@ -57,7 +59,14 @@ function conectarWebSocketInvitado() {
                 pantallaEspera.classList.remove('oculto');
             }
         })
+        .on('broadcast', { event: 'jugador_expulsado' }, (mensaje) => {
+            if (mensaje.payload.nombre === miNombre) {
+                alert("El host te sacó de la sala.");
+                location.reload();
+            }
+        })
         .on('broadcast', { event: 'actualizar_lista' }, (mensaje) => {
+            listaActual = mensaje.payload.lista;
             listaJugadores.innerHTML = '';
             mensaje.payload.lista.forEach((j, idx) => {
                 const div = document.createElement('div'); div.classList.add('jugador-item');
@@ -69,6 +78,7 @@ function conectarWebSocketInvitado() {
             pantallaEspera.classList.add('oculto');
             pantallaJuegoInvitado.classList.remove('oculto');
             if (mensaje.payload.juego === 'hacker') inyectarJuegoHacker(pantallaJuegoInvitado, canalSala);
+            else if (mensaje.payload.juego === 'battleship') iniciarBatalla({ canal: canalSala, miNombre, rivalNombre: listaActual[0], soyAnfitrion: false, contenedor: pantallaJuegoInvitado });
         })
         /* --- LECTURA DEL CEREBRO CENTRAL --- */
         .on('broadcast', { event: 'hacker_instruccion_individual' }, (mensaje) => {
@@ -207,11 +217,9 @@ window.actualizarBarrasVisuales = function(salud, fondos) {
 
 window.terminarJuegoVisual = function(victoria) {
     window.ZarkHacker.jugando = false;
-    const el = document.getElementById('texto-instruccion');
-    if (el) {
-        el.innerText = victoria ? "> DESCARGA COMPLETADA." : "> SISTEMA COMPROMETIDO.";
-        el.style.color = victoria ? "#00ff33" : "#ff3333";
-    }
+    pantallaJuegoInvitado.innerHTML = victoria
+        ? `<div class="hk-fin"><h1 style="color:#00ff33;">🔓 ACCESO CONCEDIDO</h1><p>¡Nivel superado! Esperá al host para el siguiente...</p></div>`
+        : `<div class="hk-fin"><h1 style="color:#ff3333;">🚨 ¡TE ATRAPARON!</h1><p>Esperá a que el host reinicie la conexión.</p></div>`;
 }
 
 window.activarTecladoHacker = function(elemento) {

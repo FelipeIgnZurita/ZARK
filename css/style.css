@@ -930,3 +930,11 @@ body { background-color: #121212; color: #ffffff; }
 .dial-notch { width: 6px; height: 16px; background: #00ff33; position: absolute; top: 4px; left: calc(50% - 3px); border-radius: 3px; box-shadow: 0 0 5px #00ff33; }
 .dial-valor-texto { font-size: 0.75rem; color: #888; font-weight: bold; }
 .dial-num { color: #00ff33; }
+
+/* ----- Pantalla de fin del Hacker (atrapado / nivel superado) ----- */
+.hk-fin { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 36px 10px; text-align: center; font-family: 'Courier New', Courier, monospace; }
+.hk-fin h1 { margin: 0; font-size: 2.4rem; text-shadow: 0 0 14px currentColor; }
+.hk-fin p { color: #aaa; margin: 0; font-size: 1.05rem; }
+.hk-btn { background: #00ff33; color: #002; border: none; border-radius: 10px; padding: 14px 24px; font-weight: 900; font-size: 1.1rem; cursor: pointer; font-family: 'Courier New', Courier, monospace; box-shadow: 0 0 15px rgba(0,255,51,0.4); }
+.hk-btn.roja { background: #ff3333; color: #fff; box-shadow: 0 0 15px rgba(255,51,51,0.4); }
+.hk-btn:active { transform: scale(0.95); }
