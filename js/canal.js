@@ -22,21 +22,22 @@ const idDeSala = (pin) => PREFIJO_ID + pin.toUpperCase();
 
 const TIMEOUT_CONEXION_MS = 15000;
 
-// Servidores ICE: STUN para descubrir la IP pública y TURN como relay para
-// cuando los dos dispositivos están en redes distintas (wifi vs datos móviles)
-// y no logran conectarse directo. Sin TURN, muchas conexiones celu<->notebook fallan.
-const OPCIONES_PEER = {
-    debug: 1,
-    config: {
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-            { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
-        ]
-    }
-};
+// --- Servidores ICE (STUN + TURN) ---
+// En una misma compu anda sin TURN. Entre dispositivos/redes distintas (la notebook
+// de la tele + los celulares) hace falta un TURN que haga de "relay".
+// Credenciales gratis de metered.ca (región Brasil, la más cercana).
+const ICE_SERVERS = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    { urls: 'turn:br.relay.metered.ca:80', username: '657fcffdc6d46e1da833ff24', credential: 'gWqc3jWJLRjCkHwH' },
+    { urls: 'turn:br.relay.metered.ca:80?transport=tcp', username: '657fcffdc6d46e1da833ff24', credential: 'gWqc3jWJLRjCkHwH' },
+    { urls: 'turn:br.relay.metered.ca:443', username: '657fcffdc6d46e1da833ff24', credential: 'gWqc3jWJLRjCkHwH' },
+    { urls: 'turns:br.relay.metered.ca:443?transport=tcp', username: '657fcffdc6d46e1da833ff24', credential: 'gWqc3jWJLRjCkHwH' }
+];
+
+async function cargarIceServers() {
+    return ICE_SERVERS;
+}
 
 class CanalP2P {
     constructor(rol) {
@@ -110,11 +111,12 @@ class CanalP2P {
 // HOST: abre la sala. Si el PIN ya está ocupado en el servidor, prueba con otro.
 // Devuelve { pin, canal } con el canal ya listo para recibir mandos.
 export function crearSalaHost(generarPIN, intentos = 5) {
-    return new Promise((resolve, reject) => {
+    return cargarIceServers().then((iceServers) => new Promise((resolve, reject) => {
+        const opciones = { debug: 1, config: { iceServers } };
         const probar = (restantes) => {
             const pin = generarPIN();
             const canal = new CanalP2P('host');
-            const peer = new Peer(idDeSala(pin), OPCIONES_PEER);
+            const peer = new Peer(idDeSala(pin), opciones);
             canal.peer = peer;
 
             peer.on('open', () => {
@@ -145,15 +147,16 @@ export function crearSalaHost(generarPIN, intentos = 5) {
             });
         };
         probar(intentos);
-    });
+    }));
 }
 
 // INVITADO: se conecta a la sala del PIN.
 // Resuelve con el canal abierto, o rechaza con Error('SALA_NO_EXISTE' | 'SIN_CONEXION').
 export function conectarASala(pin) {
-    return new Promise((resolve, reject) => {
+    return cargarIceServers().then((iceServers) => new Promise((resolve, reject) => {
+        const opciones = { debug: 1, config: { iceServers } };
         const canal = new CanalP2P('invitado');
-        const peer = new Peer(OPCIONES_PEER);
+        const peer = new Peer(opciones);
         canal.peer = peer;
         let terminado = false;
 
@@ -184,7 +187,7 @@ export function conectarASala(pin) {
             else if (!canal.abierto) fallar('SIN_CONEXION');
             else console.warn('[canal] error del invitado', err);
         });
-    });
+    }));
 }
 
 export const mensajeDeError = (err) =>
