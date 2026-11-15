@@ -92,6 +92,8 @@ function conectarWebSocket(pin, nombre) {
             if (mensaje.payload.id_temp === miIdTemp) {
                 pantallaIngreso.classList.add('oculto');
                 pantallaEspera.classList.remove('oculto');
+                const badge = document.getElementById('codigo-sala');
+                if (badge) { badge.innerHTML = `<small>SALA</small>${pin}`; badge.classList.remove('oculto'); }
             }
         })
         .on('broadcast', { event: 'asignar_director' }, (mensaje) => {

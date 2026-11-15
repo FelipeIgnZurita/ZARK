@@ -72,7 +72,9 @@ function conectarWebSocketHost() {
             const existe = jugadoresActivos.some(j => j.toLowerCase() === nombre.toLowerCase());
 
             if (existe) {
-                canalSalaGlobal.send({ type: 'broadcast', event: 'rechazo_unirse', payload: { id_temp: id_temp } });
+                // Mismo nombre = RECONEXIÓN: lo dejamos volver sin duplicarlo
+                canalSalaGlobal.send({ type: 'broadcast', event: 'aceptacion_unirse', payload: { id_temp: id_temp, nombre: nombre, juego: juegoSeleccionado } });
+                canalSalaGlobal.send({ type: 'broadcast', event: 'actualizar_lista', payload: { lista: jugadoresActivos } });
             } else {
                 jugadoresActivos.push(nombre);
                 actualizarListaVisual();

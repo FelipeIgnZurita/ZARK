@@ -87,9 +87,14 @@
         .noes-titulo { color: #e74c3c; font-size: 1.1rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
         .noes-lista { display: flex; flex-wrap: wrap; gap: 8px; }
         .noes-chip { background: #2a1818; color: #e0a0a0; border: 1px solid #5a2d2d; border-radius: 8px; padding: 5px 10px; font-size: 1rem; text-decoration: line-through; }
+
+        /* Código de sala siempre visible (arriba a la derecha) */
+        .codigo-sala { position: fixed; top: 10px; right: 12px; z-index: 200; background: #1a1a1a; color: #fff; border: 2px solid #775adf; border-radius: 10px; padding: 6px 12px; font-weight: 900; letter-spacing: 3px; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .codigo-sala small { display: block; font-size: 0.6rem; letter-spacing: 1px; color: #999; font-weight: normal; }
     </style>
 </head>
 <body>
+    <div id="codigo-sala" class="codigo-sala oculto"></div>
     <header class="header-zark">
         <a href="../index.html" class="material-symbols-outlined btn-volver">arrow_back</a>
         <h1 class="logo">CREAR SALA</h1>

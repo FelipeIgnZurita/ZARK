@@ -57,9 +57,14 @@
         .mirar-pantalla { text-align: center; }
         .mirar-pantalla .material-symbols-outlined { font-size: 3rem; color: #775adf; }
         #feedback-adivinar { min-height: 24px; font-weight: bold; }
+
+        /* Código de sala arriba a la derecha */
+        .codigo-sala { position: fixed; top: 8px; right: 10px; z-index: 200; background: #1a1a1a; color: #fff; border: 2px solid #775adf; border-radius: 10px; padding: 5px 10px; font-weight: 900; letter-spacing: 2px; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .codigo-sala small { display: block; font-size: 0.55rem; letter-spacing: 1px; color: #999; font-weight: normal; }
     </style>
 </head>
 <body>
+    <div id="codigo-sala" class="codigo-sala oculto"></div>
     <header class="header header-secundario">
         <a href="../index.html" class="material-symbols-outlined btn-volver">arrow_back</a>
         <h1 class="logo">ZARK</h1>

@@ -97,7 +97,12 @@ const palabrasPictionary = [
     "escalera", "lámpara", "vela", "reloj", "teléfono", "llave", "candado", "martillo", "tijera", "lápiz",
     "libro", "pelota", "guitarra", "tambor", "campana", "sombrero", "zapato", "paraguas", "anteojos", "corazón",
     "ojo", "mano", "diente", "robot", "fantasma", "corona", "ancla", "cactus", "volcán", "faro",
-    "puente", "regalo", "globo", "pie", "dado", "gorra", "pala", "hacha", "rueda", "nariz"
+    "puente", "regalo", "globo", "pie", "dado", "gorra", "pala", "hacha", "rueda", "nariz",
+    "dinosaurio", "tortuga", "caracol", "mariposa", "abeja", "caballo", "vaca", "chancho", "pollo", "rana",
+    "pingüino", "oso", "león", "mono", "jirafa", "ballena", "tiburón", "pulpo", "cangrejo", "naranja",
+    "uva", "frutilla", "sandía", "zanahoria", "tomate", "choclo", "mesa", "televisor", "heladera", "moto",
+    "helicóptero", "tractor", "piano", "trompeta", "bandera", "mapa", "anillo", "mochila", "linterna", "esqueleto",
+    "castillo", "carpa", "arcoíris", "rayo", "diamante", "llama", "pincel", "balde", "pera", "limón"
 ];
 const normalizarPict = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9ñ ]/g, '').trim();
 
@@ -134,6 +139,8 @@ async function crearSala() {
     }
 
     pinDisplay.innerText = salaPin;
+    const badge = document.getElementById('codigo-sala');
+    if (badge) { badge.innerHTML = `<small>SALA</small>${salaPin}`; badge.classList.remove('oculto'); }
     escucharJugadores();
 }
 
@@ -146,12 +153,16 @@ function escucharJugadores() {
             const nombreExiste = jugadores.some(j => j.toLowerCase() === nombre.toLowerCase());
 
             if (nombreExiste) {
-                // Si existe, lo rebotamos
+                // Mismo nombre que ya estaba = RECONEXIÓN: lo dejamos volver con su puntaje intacto
                 canalSalaGlobal.send({
                     type: 'broadcast',
-                    event: 'rechazo_unirse',
-                    payload: { id_temp: id_temp }
+                    event: 'aceptacion_unirse',
+                    payload: { id_temp: id_temp, nombre: nombre }
                 });
+                // Si era el director (el primero que entró), le devolvemos ese rol
+                if (jugadores[0] && jugadores[0].toLowerCase() === nombre.toLowerCase()) {
+                    canalSalaGlobal.send({ type: 'broadcast', event: 'asignar_director', payload: { director: jugadores[0] } });
+                }
             } else {
                 // Si está libre, lo dejamos pasar y le avisamos que entró
                 jugadores.push(nombre);
