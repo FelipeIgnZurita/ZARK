@@ -308,8 +308,9 @@ function mostrarFaseVotacion() {
     });
 
     pantallaLobby.innerHTML = `
-        <h2 class="subtitulo" style="color: #e67e22; margin: 0 0 12px 0; text-align: center;">¿Cuál será la posta?</h2>
-        <p style="text-align: center; color: #ddd; margin: 0 0 20px 0; font-size: 1.3rem;"><strong style="color: #fff;">${juezActual}</strong> tiene que elegir dentro de estas opciones.</p>
+        <h2 class="subtitulo" style="color: #e67e22; margin: 0 0 6px 0; text-align: center;">¿Cuál será la posta?</h2>
+        <h1 style="text-align: center; font-family: 'Georgia', serif; color: #fff; font-size: 2.6rem; text-transform: lowercase; margin: 0 0 10px 0; line-height: 1;">${palabraActual.palabra}</h1>
+        <p style="text-align: center; color: #ddd; margin: 0 0 20px 0; font-size: 1.3rem;"><strong style="color: #fff;">${juezActual}</strong> tiene que elegir qué significa.</p>
         <div class="pagina-diccionario">${entradasHTML}</div>
     `;
 }
